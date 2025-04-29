@@ -1,7 +1,8 @@
 # Multiplayer Tic Tac Toe using WebSockets
 Welcome to the Multiplayer Tic Tac Toe game built using WebSockets! This game allows players to join a game room, play Tic Tac Toe in real-time, and enjoy an interactive multiplayer experience.
 
-![image](https://github.com/user-attachments/assets/177ab6bd-1903-4bf2-b4cd-942282efa77f)
+
+https://github.com/user-attachments/assets/1f35559e-7f28-4a46-a4d8-61f9be972e0b
 
 
 - Real-time interaction with players.
