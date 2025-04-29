@@ -1,6 +1,8 @@
 # Multiplayer Tic Tac Toe using WebSockets
 Welcome to the Multiplayer Tic Tac Toe game built using WebSockets! This game allows players to join a game room, play Tic Tac Toe in real-time, and enjoy an interactive multiplayer experience.
-Foobar is a Python library for dealing with word pluralization.
+
+![image](https://github.com/user-attachments/assets/177ab6bd-1903-4bf2-b4cd-942282efa77f)
+
 
 - Real-time interaction with players.
 
@@ -22,8 +24,6 @@ Foobar is a Python library for dealing with word pluralization.
 - Game Creation & Joining: Easily create a new game or join an existing one using a Game ID.
 
 - Secure WebSocket (WSS): Encrypted communication between the client and server.
-
-
 
 ## Installation
 To run this project locally, follow these steps:
