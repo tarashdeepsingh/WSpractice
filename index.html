@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mutiplayer Tic Tac Toe using Web Sockets</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f7f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      margin-top: 30px;
+      color: #333;
+    }
+
+    #controls {
+      margin: 20px 0;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button {
+      padding: 8px 16px;
+      font-size: 14px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    input[type="text"] {
+      padding: 8px;
+      font-size: 14px;
+      border: 2px solid #ccc;
+      border-radius: 6px;
+      width: 180px;
+    }
+
+    #divPlayers {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    #divPlayers div {
+      padding: 8px;
+      border-radius: 6px;
+      color: white;
+      font-weight: bold;
+      text-align: center;
+      background-color: #2ecc71;
+    }
+
+    #main-board {
+      margin-top: 30px;
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+
+    #divBoard {
+      display: grid;
+      gap: 8px;
+      justify-items: center;
+      width: fit-content;
+    }
+
+    #divBoard button {
+      width: 80px;
+      height: 80px;
+      font-size: 28px;
+      border: 2px solid #ccc;
+      border-radius: 6px;
+      background-color: #ecf0f1;
+      transition: transform 0.2s ease;
+    }
+
+    #divBoard button:hover {
+      transform: scale(1.05);
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 600px) {
+      #divBoard {
+        gap: 6px;
+      }
+
+      #divBoard button {
+        width: 60px;
+        height: 60px;
+        font-size: 20px;
+      }
+
+      input[type="text"] {
+        width: 140px;
+      }
+
+      button {
+        font-size: 12px;
+        padding: 6px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>TicTacToe-Socket</h1>
+  <div id="controls">
+    <button id="btn-create">New Game</button>
+    <button id="btn-join">Join Game</button>
+    <input type="text" id="txt-game-id" placeholder="Enter Game ID"/>
+  </div>
+  <div id="divPlayers"></div>
+  <div id="main-board">
+    <div id="divBoard"></div>
+  </div>
+
+  <script>
+    let clientId = null;
+    let gameId = null;
+    let playerSymbol = null;
+    let playerColor = null;
+    let ws = new WebSocket("wss://" + window.location.host);
+
+    const btnCreate = document.getElementById('btn-create');
+    const btnJoin = document.getElementById('btn-join');
+    const txtGameId = document.getElementById('txt-game-id');
+    const divPlayers = document.getElementById('divPlayers');
+    const divBoard = document.getElementById('divBoard');
+
+    btnJoin.addEventListener("click", () => {
+      if (!gameId) {
+        gameId = txtGameId.value;
+      }
+      const payload = {
+        method: "join",
+        clientId: clientId,
+        gameId: gameId
+      };
+      ws.send(JSON.stringify(payload));
+    });
+
+    btnCreate.addEventListener("click", () => {
+      const payload = {
+        method: "create",
+        clientId: clientId
+      };
+      ws.send(JSON.stringify(payload));
+    });
+
+    ws.onmessage = message => {
+      const response = JSON.parse(message.data);
+
+      if (response.method === "connect") {
+        clientId = response.clientId;
+      }
+
+      if (response.method === "create") {
+        gameId = response.game.id;
+
+        // Hide create game after joining
+        document.getElementById('btn-create').style.display = 'none';
+
+        const d = document.createElement("div");
+        d.textContent = "Your game ID is " + response.game.id;
+        divPlayers.appendChild(d);
+      }
+
+      if (response.method === "join") {
+        const game = response.game;
+        gameId = game.id;
+
+        // Hide controls after joining
+        document.getElementById('controls').style.display = 'none';
+
+        divPlayers.innerHTML = "";
+        game.clients.forEach(c => {
+          const d = document.createElement("div");
+          d.textContent = `Client ${c.clientId.slice(0, 6)}: ${c.symbol}`;
+          d.style.backgroundColor = c.color;
+          divPlayers.appendChild(d);
+          if (c.clientId === clientId) {
+            playerSymbol = c.symbol;
+            playerColor = c.color;
+          }
+        });
+
+        divBoard.innerHTML = "";
+
+        let boardSize;
+        if (game.clients.length === 2) {
+        boardSize = 9;
+        } else if (game.clients.length === 3) {
+        boardSize = 16;
+        }
+
+        const gridSize = Math.sqrt(boardSize);
+        divBoard.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+
+        for (let i = 0; i < boardSize; i++) {
+          const b = document.createElement("button");
+          b.id = "cell" + (i + 1);
+          b.tag = i + 1;
+          b.addEventListener("click", () => {
+            if (b.disabled) return;
+            b.textContent = playerSymbol;
+            b.style.color = playerColor;
+            b.disabled = true;
+
+            const payload = {
+              method: "play",
+              clientId: clientId,
+              gameId: gameId,
+              cellId: b.tag,
+              symbol: playerSymbol,
+              color: playerColor
+            };
+            ws.send(JSON.stringify(payload));
+          });
+          divBoard.appendChild(b);
+        }
+      }
+
+      if (response.method === "update") {
+        if (!response.game.state) return;
+        for (const cellId of Object.keys(response.game.state)) {
+          const symbol = response.game.state[cellId].symbol;
+          const color = response.game.state[cellId].color;
+          const cell = document.getElementById("cell" + cellId);
+          if (cell) {
+            cell.textContent = symbol;
+            cell.style.color = color;
+            cell.disabled = true;
+          }
+        }
+      }
+    };
+  </script>
+</body>
+</html>
